@@ -130,13 +130,13 @@ def get_cf_handle_from_db(discord_id):
         return None
 
 RATING_COLORS = {
-    (0, 1199): 0xCCCCCC,      # Grey
-    (1200, 1399): 0x77FF77,   # Green
-    (1400, 1599): 0x77DDFF,   # Cyan
-    (1600, 1899): 0xAAAAFF,   # Blue
-    (1900, 2099): 0xFF88FF,   # Purple
-    (2100, 2399): 0xFFCC88,   # Orange
-    (2400, 9999): 0xFF0000,   # Red
+    (0, 1199): ('Grey', 0xCCCCCC),
+    (1200, 1399): ('Green', 0x77FF77),
+    (1400, 1599): ('Cyan', 0x77DDFF),
+    (1600, 1899): ('Blue', 0xAAAAFF),
+    (1900, 2099): ('Purple', 0xFF88FF),
+    (2100, 2399): ('Orange', 0xFFCC88),
+    (2400, 9999): ('Red', 0xFF0000),
 }
 
 def get_codeforces_rating(username):
@@ -155,19 +155,19 @@ def get_codeforces_rating(username):
     
 async def set_discord_role_color(member, rating):
     color_name = None
-    for rating_range, color in RATING_COLORS.items():
+    for rating_range, (color_name, color_value) in RATING_COLORS.items():
         if rating_range[0] <= rating <= rating_range[1]:
             role_name = f"Rating {rating_range[0]}-{rating_range[1]}"
-            color_name = f"{rating_range[0]}-{rating_range[1]}"
             role = discord.utils.get(member.guild.roles, name=role_name)
             if not role:
-                role = await member.guild.create_role(name=role_name, color=discord.Color(color))
+                role = await member.guild.create_role(name=role_name, color=discord.Color(color_value))
             else:
-                await role.edit(color=discord.Color(color))
+                await role.edit(color=discord.Color(color_value))
 
             await member.add_roles(role)
-            break
-    return color_name
+            return color_name
+    return "Unknown"  # If rating does not fall into any predefined range
+
 
 @client.event
 async def on_ready():
@@ -233,11 +233,8 @@ async def on_message(message):
         cf_username = message.content.split()[1]
         rating = get_codeforces_rating(cf_username)
         if rating is not None:
-            color_range = await set_discord_role_color(message.author, rating)
-            if color_range:
-                await message.channel.send(f"{cf_username} has rating {rating}, color is set to {color_range}")
-            else:
-                await message.channel.send("Could not set color based on rating.")
+            color_name = await set_discord_role_color(message.author, rating)
+            await message.channel.send(f"{cf_username} has rating {rating}, color is set to {color_name}")
         else:
             await message.channel.send("Could not retrieve Codeforces rating.")
 
