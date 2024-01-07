@@ -129,6 +129,44 @@ def get_cf_handle_from_db(discord_id):
         print(f"Error fetching Codeforces handle: {str(e)}")
         return None
 
+RATING_COLORS = {
+    (0, 1199): 0xCCCCCC,      # Grey
+    (1200, 1399): 0x77FF77,   # Green
+    (1400, 1599): 0x77DDFF,   # Cyan
+    (1600, 1899): 0xAAAAFF,   # Blue
+    (1900, 2099): 0xFF88FF,   # Purple
+    (2100, 2399): 0xFFCC88,   # Orange
+    (2400, 9999): 0xFF0000,   # Red
+}
+
+def get_codeforces_rating(username):
+    api_url = f"https://codeforces.com/api/user.info?handles={username}"
+    response = requests.get(api_url)
+    if response.status_code == 200:
+        data = response.json()
+        if data['status'] == 'OK':
+            return data['result'][0]['rating']
+        else:
+            print("Error in API response:", data['comment'])
+            return None
+    else:
+        print("Failed to retrieve data from Codeforces API")
+        return None
+    
+
+async def set_discord_role_color(member, rating):
+    for rating_range, color in RATING_COLORS.items():
+        if rating_range[0] <= rating <= rating_range[1]:
+            role_name = f"Rating {rating_range[0]}-{rating_range[1]}"
+            role = discord.utils.get(member.guild.roles, name=role_name)
+            if not role:
+                role = await member.guild.create_role(name=role_name, color=discord.Color(color))
+            else:
+                await role.edit(color=discord.Color(color))
+            
+            await member.add_roles(role)
+            break
+
 @client.event
 async def on_ready():
     print(f'Logged in as {client.user}')
@@ -140,7 +178,7 @@ async def on_message(message):
 
     print(f"Message from {message.author}: {message.content}")
 
-    if message.content.startswith('identify'):
+    if message.content.startswith('!identify'):
         discord_user_id = str(message.author.id)
         content = message.content.strip()
 
@@ -169,7 +207,7 @@ async def on_message(message):
 
         await message.channel.send(response)
 
-    if message.content.startswith('problem'):
+    if message.content.startswith('!problem'):
         discord_user_id = message.author.id
         cf_username = get_cf_handle_from_db(discord_user_id)
         if cf_username:
@@ -188,5 +226,13 @@ async def on_message(message):
             response = "Please identify yourself first with your Codeforces username using the command: identify [username]"
 
         await message.channel.send(response)
+
+    if message.content.startswith('!rating'):
+        cf_username = message.content.split()[1]
+        rating = get_codeforces_rating(cf_username)
+        if rating is not None:
+            await set_discord_role_color(message.author, rating)
+        else:
+            await message.channel.send("Could not retrieve Codeforces rating.")
 
 client.run(os.getenv('BOT_TOKEN'))
