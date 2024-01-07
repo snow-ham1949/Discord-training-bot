@@ -153,19 +153,21 @@ def get_codeforces_rating(username):
         print("Failed to retrieve data from Codeforces API")
         return None
     
-
 async def set_discord_role_color(member, rating):
+    color_name = None
     for rating_range, color in RATING_COLORS.items():
         if rating_range[0] <= rating <= rating_range[1]:
             role_name = f"Rating {rating_range[0]}-{rating_range[1]}"
+            color_name = f"{rating_range[0]}-{rating_range[1]}"
             role = discord.utils.get(member.guild.roles, name=role_name)
             if not role:
                 role = await member.guild.create_role(name=role_name, color=discord.Color(color))
             else:
                 await role.edit(color=discord.Color(color))
-            
+
             await member.add_roles(role)
             break
+    return color_name
 
 @client.event
 async def on_ready():
@@ -231,7 +233,11 @@ async def on_message(message):
         cf_username = message.content.split()[1]
         rating = get_codeforces_rating(cf_username)
         if rating is not None:
-            await set_discord_role_color(message.author, rating)
+            color_range = await set_discord_role_color(message.author, rating)
+            if color_range:
+                await message.channel.send(f"{cf_username} has rating {rating}, color is set to {color_range}")
+            else:
+                await message.channel.send("Could not set color based on rating.")
         else:
             await message.channel.send("Could not retrieve Codeforces rating.")
 
