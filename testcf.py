@@ -130,12 +130,12 @@ def get_cf_handle_from_db(discord_id):
         return None
 
 RATING_COLORS = {
-    (0, 1199): ('Grey', 0xCCCCCC),
+    (0, 1199): ('Gray', 0xCCCCCC),
     (1200, 1399): ('Green', 0x77FF77),
-    (1400, 1599): ('Cyan', 0x77DDFF),
+    (1400, 1599): ('Cyan', 0x03a89e),
     (1600, 1899): ('Blue', 0xAAAAFF),
-    (1900, 2099): ('Purple', 0xFF88FF),
-    (2100, 2399): ('Orange', 0xFFCC88),
+    (1900, 2099): ('Violet', 0xa0a),
+    (2100, 2399): ('Orange', 0xff8c00),
     (2400, 9999): ('Red', 0xFF0000),
 }
 
