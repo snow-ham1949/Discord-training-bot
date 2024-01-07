@@ -230,7 +230,8 @@ async def on_message(message):
         await message.channel.send(response)
 
     if message.content.startswith('!rating'):
-        cf_username = message.content.split()[1]
+        discord_user_id = str(message.author.id)
+        cf_username = get_cf_handle_from_db(discord_user_id)
         rating = get_codeforces_rating(cf_username)
         if rating is not None:
             color_name = await set_discord_role_color(message.author, rating)
